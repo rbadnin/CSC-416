@@ -15,8 +15,8 @@ int main(void)
     u08 leftLight = threshold;
     u08 rightLight = threshold;
     u08 type = 1;
-    u08 firstMotor = 1;
-    u08 secondMotor = 0;
+    u08 firstMotor = 0;
+    u08 secondMotor = 1;
 
     init();
     set_servo(0, 127);
@@ -34,16 +34,16 @@ int main(void)
             if (type == 1)
             {
                 type = -1;
-                firstMotor = 0;
-                secondMotor = 1;
+                firstMotor = 1;
+                secondMotor = 0;
                 clear_screen();
                 print_string("3B");
             }
             else
             {
                 type = 1;
-                firstMotor = 1;
-                secondMotor = 0;
+                firstMotor = 0;
+                secondMotor = 1;
                 clear_screen();
                 print_string("3A");
             }
