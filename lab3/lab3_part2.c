@@ -30,26 +30,13 @@ struct hidden_node
     float b;
 };
 
-struct output_node
-{
-    float in1;
-    float in2;
-    float in3;
-    float w1;
-    float w2;
-    float w3;
-    float b;
-};
-
-struct motor_command
-compute_proportional(uint8_t left, uint8_t right);
-struct motor_command
-compute_neural_network(uint8_t left, uint8_t right);
+void compute_proportional(uint8_t left, uint8_t right);
+void compute_neural_network(uint8_t left, uint8_t right);
 void initialize_neural_network();
 void motor(uint8_t num, int8_t speed);
 int calculateErr(u08 actual);
 
-struct hidden_node h1;
+struct hidden_node h1 = {0, 0, 0, 0, 0};
 struct hidden_node h2 = {0, 0, 0, 0, 0};
 struct hidden_node h3 = {0, 0, 0, 0, 0};
 
@@ -290,33 +277,85 @@ struct motor_command compute_neural_network(uint8_t left, uint8_t right)
 
 void train_neural_network(struct motor_training_value currVal)
 {
-    // this will happen monday
-    print_num(23);
+    struct hidden_node temp_h1 = {0, 0, 0, 0, 0};
+    struct hidden_node temp_h2 = {0, 0, 0, 0, 0};
+    struct hidden_node temp_h3 = {0, 0, 0, 0, 0};
+
+    struct output_node temp_o1 = {0, 0, 0, 0, 0, 0, 0};
+    struct output_node temp_o2 = {0, 0, 0, 0, 0, 0, 0};
+
+    // compute new output weights and biases (don't update yet)
+    // temp_o1.w1 = compute_new_weight(o1.w1, compute_outer_layer_slope(?));
+    // temp_o1.w2 = compute_new_weight(o1.w2, compute_outer_layer_slope(?));
+    // temp_o1.w3 = compute_new_weight(o1.w3, compute_outer_layer_slope(?));
+    // temp_o1.b = compute_new_weight(o1.b, compute_outer_layer_slope(?));
+ 
+    // temp_o2.w1 = compute_new_weight(o2.w1, compute_outer_layer_slope(?));
+    // temp_o2.w2 = compute_new_weight(o2.w2, compute_outer_layer_slope(?));
+    // temp_o2.w3 = compute_new_weight(o2.w3, compute_outer_layer_slope(?));
+    // temp_o2.b = compute_new_weight(o2.b, compute_outer_layer_slope(?));
+
+    // compute new hidden weight and biases (don't update yet)
+    // temp_h1.w1 = compute_new_weight(h1.w1, compute_hidden_layer_slope(?));
+    // temp_h1.w2 = compute_new_weight(h1.w2, compute_hidden_layer_slope(?));
+    // temp_h1.b = compute_new_weight(h1.b, compute_hidden_layer_slope(?));
+
+    // temp_h2.w1 = compute_new_weight(h2.w1, compute_hidden_layer_slope(?));
+    // temp_h2.w2 = compute_new_weight(h2.w2, compute_hidden_layer_slope(?));
+    // temp_h2.b = compute_new_weight(h2.b, compute_hidden_layer_slope(?));
+
+    // temp_h3.w1 = compute_new_weight(h3.w1, compute_hidden_layer_slope(?));
+    // temp_h3.w2 = compute_new_weight(h3.w2, compute_hidden_layer_slope(?));
+    // temp_h3.b = compute_new_weight(h3.b, compute_hidden_layer_slope(?));
+
+    // update all weights and biases
+    o1.w1 = temp_o1.w1;
+    o1.w2 = temp_o1.w2;
+    o1.w3 = temp_o1.w3;
+    o1.b = temp_o1.b;
+
+    o2.w1 = temp_o2.w1;
+    o2.w2 = temp_o2.w2;
+    o2.w3 = temp_o2.w3;
+    o2.b = temp_o2.b;    
+
+    h1.w1 = temp_h1.w1;
+    h1.w2 = temp_h1.w2;
+    h1.b = temp_h1.b;
+
+    h2.w1 = temp_h2.w1;
+    h2.w2 = temp_h2.w2;
+    h2.b = temp_h2.b;
+
+    h3.w1 = temp_h3.w1;
+    h3.w2 = temp_h3.w2;
+    h3.b = temp_h3.b;
+
     return;
-    // should complete 1 "epoch": compute all new weights and biases then update
 }
+
 
 // helper methods for neural network computations ---------------------
 
-// void compute_output_layer_slope(float curr_node_out, float curr_node_target, float inp_node_out)
-// {
-//     return (curr_node_out - curr_node_target) * (curr_node_out * (1 - curr_node_out)) * inp_node_out;
-// }
+float compute_new_weight(float old_weight, float slope)
+{
+    return old_weight - (.025 * slope);
+}
 
-// float compute_new_output_layer_weight(float old_w)
-// {
-//     return old_w - (.025 * compute_output_layer_slope());
-// }
+float compute_outer_layer_slope(float out_h, float out_o, float target)
+{
+    return (out_o - target) * (out_o * (1 - out_o)) * out_h;
+} 
 
-// void compute_hidden_layer_slope()
-// {
+float compute_hidden_layer_slope(float out_o1, float target_o1, float out_o2, float target_o2,
+        float weight_o1, float weight_o2, float out_h, float inp_weight)
+{
+    return (((out_o1 - target_o1) * (out_o1 * (1 - out_o1)) * weight_o1 )
+            + ((out_o2 - target_o2) * (out_o2 * (1 - out_o2)) * weight_o2)) 
+            * (out_h * (1- out_h)) 
+            * inp_weight;
+}
 
-// }
-
-// float compute_new_hidden_layer_slope(struct hidden_node)
-// {
-//     return old_w - (.025 * compute_hidden_layer_slope());
-// }
 
 // helper methods for proportional controller -------------------------
 
