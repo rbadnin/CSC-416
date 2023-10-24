@@ -4,6 +4,8 @@
 #include <avr/interrupt.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
 
 struct motor_command
 {
@@ -56,7 +58,7 @@ struct output_node o2 = {0, 0, 0, 0, 0, 0, 0};
 
 int main(void)
 {
-    init(); 
+    init();
 
     struct motor_command curr_motor_command;
     struct motor_training_value curr_training_value;
@@ -66,9 +68,9 @@ int main(void)
     uint8_t leftSensor;
     uint8_t rightSensor;
     uint8_t training_iteration_count = 0;
-    uint8_t data_count = 0;
+    uint16_t data_count = 0;
 
-    struct motor_training_value training_data[1000];
+    struct motor_training_value *training_data = malloc(sizeof(struct motor_training_value) * 1000);
 
     initialize_neural_network();
 
@@ -79,10 +81,6 @@ int main(void)
     // set motors to 0 speed
     motor(0, 0);
     motor(1, 0);
-
-    print_num((int) h1.b * 100);
-    
-    return 0;
 
     // immediately begin running the proportional controller
     clear_screen();
@@ -98,9 +96,15 @@ int main(void)
         motor(1, curr_motor_command.right_speed);
     }
 
+    while (get_btn())
+        ;
+
     // this will need to be in while loop
     clear_screen();
     print_string("Data");
+
+    motor(0, 0);
+    motor(1, 0);
 
     _delay_ms(3000);
 
@@ -109,13 +113,20 @@ int main(void)
     while (!get_btn())
     {
         clear_screen();
-        print_string("Data");
-
-        lcd_cursor(0, 1);
+        print_string("Data ");
         print_num(data_count);
+
+                _delay_ms(1000);
+
 
         leftSensor = analog(0);
         rightSensor = analog(1);
+
+        lcd_cursor(0, 1);
+        print_num(leftSensor);
+        print_string(" ");
+        print_num(rightSensor);
+
         curr_motor_command = compute_proportional(leftSensor, rightSensor);
 
         curr_training_value.left = leftSensor;
@@ -127,17 +138,55 @@ int main(void)
 
         data_count++;
 
-        _delay_ms(50);
+        _delay_ms(1000);
     }
+
+    while (get_btn())
+        ;
+
+    // print_string(" ");
+    // print_num(training_data[198].right);
+    // print_string(" ");
+    // lcd_cursor(0, 1);
+    // print_num(training_data[198].left_speed);
+    // print_string(" ");
+    // print_num(training_data[198].right_speed);
+    // print_string(" ");
 
     // During this mode, you will use the captured training data along with the proportional controller to train the neural network
     clear_screen();
     print_string("Training");
 
+    _delay_ms(1000);
+
+    uint8_t yMove = 0;
+    while (!get_btn())
+    {
+        clear_screen();
+        print_string("Iterations:");
+        lcd_cursor(0, 1);
+        print_num(training_iteration_count);
+
+        yMove = get_accel_y();
+        if ((yMove < 240 && yMove > 128))
+            training_iteration_count < 255 ? training_iteration_count + 1 : 0;
+        else if ((yMove > 15 && yMove < 128))
+            training_iteration_count > 0 ? training_iteration_count - 1 : 0;
+
+        _delay_ms(50);
+    }
+
     while (!get_btn())
     {
         // for data in dataSet
-
+        int i;
+        for (i = 0; i < data_count; i++)
+        {
+            clear_screen();
+            float r = training_data[i].left_speed;
+            print_num(r); // DEBUG THIS, it freaks out the second I try to use values from the training data
+            _delay_ms(200);
+        }
         // add motor_values to some array of values to later be used for training
     }
 
@@ -154,33 +203,36 @@ int main(void)
         motor(1, curr_motor_command.right_speed);
     }
 
+    free(training_data);
     return 0;
 }
 
 void initialize_neural_network()
 {
-    //print_num(rand() % 100);
-    h1.w1 = (rand() % 100) / 100.0f;
-    h1.w2 = (rand() % 100) / 100.0f;
-    h1.b = rand() / RAND_MAX;
+    srand(time(NULL));
 
-    h2.w1 = (rand() % 100) / 100;
-    h2.w2 = (rand() % 100) / 100;
-    h2.b = (rand() % 100) / 100;
+    // print_num(rand() % 100);
+    h1.w1 = (float)rand() / (float)RAND_MAX;
+    h1.w2 = (float)rand() / (float)RAND_MAX;
+    h1.b = (float)rand() / (float)RAND_MAX;
 
-    h3.w1 = (rand() % 100) / 100;
-    h3.w2 = (rand() % 100) / 100;
-    h3.b = (rand() % 100) / 100;
+    h2.w1 = (float)rand() / (float)RAND_MAX;
+    h2.w2 = (float)rand() / (float)RAND_MAX;
+    h2.b = (float)rand() / (float)RAND_MAX;
 
-    o1.w1 = (rand() % 100) / 100;
-    o1.w2 = (rand() % 100) / 100;
-    o1.w3 = (rand() % 100) / 100;
-    o1.b = (rand() % 100) / 100;
+    h3.w1 = (float)rand() / (float)RAND_MAX;
+    h3.w2 = (float)rand() / (float)RAND_MAX;
+    h3.b = (float)rand() / (float)RAND_MAX;
 
-    o2.w1 = (rand() % 100) / 100;
-    o2.w2 = (rand() % 100) / 100;
-    o2.w3 = (rand() % 100) / 100;
-    o2.b = (rand() % 100) / 100;
+    o1.w1 = (float)rand() / (float)RAND_MAX;
+    o1.w2 = (float)rand() / (float)RAND_MAX;
+    o1.w3 = (float)rand() / (float)RAND_MAX;
+    o1.b = (float)rand() / (float)RAND_MAX;
+
+    o2.w1 = (float)rand() / (float)RAND_MAX;
+    o2.w2 = (float)rand() / (float)RAND_MAX;
+    o2.w3 = (float)rand() / (float)RAND_MAX;
+    o2.b = (float)rand() / (float)RAND_MAX;
 }
 
 struct motor_command compute_proportional(uint8_t left, uint8_t right)
