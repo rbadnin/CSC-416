@@ -52,11 +52,15 @@ int calculateErr(u08 actual);
 
 float compute_new_weight(float old_weight, float slope)
 {
-    return old_weight - (0.025f * slope);
+    return old_weight - (0.025f * slope) > 0 ? old_weight - (0.025f * slope) : 0;
 }
 
 float compute_outer_layer_slope(float out_h, float out_o, float target)
 {
+    clear_screen();
+    print_string("diff: ");
+    print_num( (out_o - target) * 100);
+    _delay_ms(100);
     return (out_o - target) * (out_o * (1.f - out_o)) * out_h;
 }
 
@@ -162,9 +166,9 @@ int main(void)
         curr_motor_command = compute_proportional(leftSensor, rightSensor);
 
         // convert everything into 0-1 range before training
-        curr_training_value.left = ((float)leftSensor) / (float) 255;
-        curr_training_value.right = ((float)rightSensor) / (float) 255;
-        curr_training_value.left_speed = ((float) curr_motor_command.left_speed) / 100.f;
+        curr_training_value.left = ((float)leftSensor) / (float)255;
+        curr_training_value.right = ((float)rightSensor) / (float)255;
+        curr_training_value.left_speed = ((float)curr_motor_command.left_speed) / 100.f;
         curr_training_value.right_speed = ((float)curr_motor_command.right_speed * -1.f) / 100.f;
 
         training_data[data_count] = curr_training_value;
@@ -209,19 +213,19 @@ int main(void)
         _delay_ms(50);
     }
 
+    training_iteration_count *= 10;
+
     uint8_t curr_training_count = 0;
     while (curr_training_count < training_iteration_count)
     {
         // Cycle back to start of dataset if there are more training iterations than data
-        if (curr_training_count > data_count)
+        if (curr_training_count >= data_count)
         {
             curr_training_count = 0;
             training_iteration_count -= data_count - 1;
         }
 
-        int i = 0; 
-        for (i = 0; i < 10; i++)
-            train_neural_network(training_data[curr_training_count]);
+        train_neural_network(training_data[curr_training_count]);
         curr_training_count++;
     }
 
@@ -233,16 +237,23 @@ int main(void)
     _delay_ms(2000);
 
     // run neural network
-    clear_screen();
-    print_string("AI MODE");
 
     while (!get_btn())
     {
+        clear_screen();
+        print_string("AI MODE");
+        lcd_cursor(0, 1);
         leftSensor = analog(0);
         rightSensor = analog(1);
         curr_motor_command = compute_neural_network(((float)leftSensor) / 255.f, ((float)rightSensor) / 255.f); // needs 0-1 range for input
+        print_num(curr_motor_command.left_speed * 100);
+        print_string(" ");
+        print_num(curr_motor_command.right_speed * 100);
+
         motor(0, curr_motor_command.left_speed * 100);
         motor(1, curr_motor_command.right_speed * -100);
+        _delay_ms(200);
+
     }
 
     free(training_data);
@@ -367,10 +378,9 @@ void train_neural_network(struct motor_training_value currVal)
     struct motor_command outputs = compute_neural_network(currVal.left, currVal.right);
 
     clear_screen();
-    print_num(o2.w1 * 100.f);
-    // lcd_cursor(0, 1);
-    // print_num(currVal.right_speed * 100.f);
-
+    print_num(outputs.left_speed * 100.f);
+    lcd_cursor(0, 1);
+    print_num(currVal.left_speed * 100.f);
 
     // compute new outer weight and biases (don't update yet)
     temp_o1.w1 = compute_new_weight(o1.w1, compute_outer_layer_slope(o1.in1, outputs.left_speed, currVal.left_speed));
