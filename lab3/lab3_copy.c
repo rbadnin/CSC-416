@@ -97,7 +97,7 @@ int main(void)
     int leftSensor;
     int rightSensor;
     int training_iteration_count = 0;
-    uint16_t data_count = 0;
+    int data_count = 0;
     char answer[2];
     char answer2[2];
 
@@ -173,14 +173,17 @@ int main(void)
     int curr_training_count = 0;
     while (curr_training_count < training_iteration_count)
     {
-        printf("Training with data %d.")
         // Cycle back to start of dataset if there are more training iterations than data
-        if (curr_training_count > data_count)
+        if (curr_training_count >= data_count) // UPDATE: Added an =
         {
             curr_training_count = 0;
             training_iteration_count -= data_count - 1;
         }
 
+        printf("Training with data %d -> Left: %.1f, Right: %.1f, LeftSpeed: %.1f, RightSpeed: %.1f\n", curr_training_count, 
+            training_data[curr_training_count].left * 255, training_data[curr_training_count].right * 255, training_data[curr_training_count].left_speed * 100, training_data[curr_training_count].right_speed * 100);
+        
+        
         train_neural_network(training_data[curr_training_count]);
         curr_training_count++;
     }
@@ -290,6 +293,17 @@ struct motor_command compute_neural_network(float left, float right)
     return result;
 }
 
+void print_curr_weights()
+{
+    printf("------------------------------------\n");
+    printf("Weight    o1    o2    h1    h2    h3\n");
+    printf("w1    %6.1f%6.1f%6.1f%6.1f%6.1f\n", o1.w1, o2.w1, h1.w1, h2.w1, h3.w1);
+    printf("w2    %6.1f%6.1f%6.1f%6.1f%6.1f\n", o1.w2, o2.w2, h1.w2, h2.w2, h3.w2);
+    printf("w3    %6.1f%6.1f     -     -     -\n", o1.w3, o2.w3);
+    printf("b     %6.1f%6.1f%6.1f%6.1f%6.1f\n", o1.b, o2.b, h1.b, h2.b, h3.b);
+    printf("------------------------------------\n");
+}
+
 void train_neural_network(struct motor_training_value currVal)
 {
     struct hidden_node temp_h1 = {0, 0, 0, 0, 0};
@@ -301,10 +315,6 @@ void train_neural_network(struct motor_training_value currVal)
 
     struct motor_command outputs = compute_neural_network(currVal.left, currVal.right);
 
-    // clear_screen();
-    // print_num(currVal.left_speed * 100.f);
-    // lcd_cursor(0, 1);
-    // print_num(outputs.left_speed * 100.f);
 
     // compute new outer weight and biases (don't update yet)
     temp_o1.w1 = compute_new_weight(o1.w1, compute_outer_layer_slope(o1.in1, outputs.left_speed, currVal.left_speed));
@@ -331,6 +341,8 @@ void train_neural_network(struct motor_training_value currVal)
     temp_h3.b = compute_new_weight(h3.b, compute_hidden_layer_slope(outputs, currVal, o1.w3, o2.w3, o1.in3, -1));
 
     // update all weights and biases
+    print_curr_weights();
+
     o1.w1 = temp_o1.w1;
     o1.w2 = temp_o1.w2;
     o1.w3 = temp_o1.w3;
