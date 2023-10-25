@@ -18,25 +18,25 @@ struct motor_training_value
     float right_speed;
 };
 
-struct hidden_node
-{
-    float in1;
-    float in2;
-    float w1;
-    float w2;
-    float b;
-};
+// struct hidden_node
+// {
+//     float in1;
+//     float in2;
+//     float w1;
+//     float w2;
+//     float b;
+// };
 
-struct output_node
-{
-    float in1;
-    float in2;
-    float in3;
-    float w1;
-    float w2;
-    float w3;
-    float b;
-};
+// struct output_node
+// {
+//     float in1;
+//     float in2;
+//     float in3;
+//     float w1;
+//     float w2;
+//     float w3;
+//     float b;
+// };
 
 struct motor_command compute_proportional(int left, int right);
 struct motor_command compute_neural_network(float left, float right);
@@ -47,21 +47,21 @@ int calculateErr(int actual);
 
 // helper methods for neural network computations ---------------------
 
-float compute_new_weight(float old_weight, float slope)
-{
-    return old_weight - (0.025f * slope);
-}
+// float compute_new_weight(float old_weight, float slope)
+// {
+//     return old_weight - (0.025f * slope);
+// }
 
-float compute_outer_layer_slope(float out_h, float out_o, float target)
-{
-    return (out_o - target) * (out_o * (1.f - out_o)) * out_h;
-}
+// float compute_outer_layer_slope(float out_h, float out_o, float target)
+// {
+//     return (out_o - target) * (out_o * (1.f - out_o)) * out_h;
+// }
 
-float compute_hidden_layer_slope(struct motor_command outputs, struct motor_training_value currVal,
-                                 float weight_o1, float weight_o2, float out_h, float inp)
-{
-    return (((outputs.left_speed - currVal.left_speed) * (outputs.left_speed * (1 - outputs.left_speed)) * weight_o1) + ((outputs.right_speed - currVal.right_speed) * (outputs.right_speed * (1 - outputs.right_speed)) * weight_o2)) * (out_h * (1 - out_h)) * inp;
-}
+// float compute_hidden_layer_slope(struct motor_command outputs, struct motor_training_value currVal,
+//                                  float weight_o1, float weight_o2, float out_h, float inp)
+// {
+//     return (((outputs.left_speed - currVal.left_speed) * (outputs.left_speed * (1 - outputs.left_speed)) * weight_o1) + ((outputs.right_speed - currVal.right_speed) * (outputs.right_speed * (1 - outputs.right_speed)) * weight_o2)) * (out_h * (1 - out_h)) * inp;
+// }
 
 // helper methods for proportional controller -------------------------
 
@@ -80,17 +80,104 @@ int calculateErr(int actual)
     return error;
 }
 
-struct hidden_node h1 = {0, 0, 0, 0, 0};
-struct hidden_node h2 = {0, 0, 0, 0, 0};
-struct hidden_node h3 = {0, 0, 0, 0, 0};
+// struct hidden_node h1 = {0, 0, 0, 0, 0};
+// struct hidden_node h2 = {0, 0, 0, 0, 0};
+// struct hidden_node h3 = {0, 0, 0, 0, 0};
 
-struct output_node o1 = {0, 0, 0, 0, 0, 0, 0};
-struct output_node o2 = {0, 0, 0, 0, 0, 0, 0};
+// struct output_node o1 = {0, 0, 0, 0, 0, 0, 0};
+// struct output_node o2 = {0, 0, 0, 0, 0, 0, 0};
+
+// Define neural network structure
+#define INPUT_NODES 2
+#define HIDDEN_NODES 3
+#define OUTPUT_NODES 2
+#define LEARNING_RATE 0.1
+
+typedef struct {
+    float weights[INPUT_NODES][HIDDEN_NODES];
+    float bias_hidden[HIDDEN_NODES];
+    float hidden_outputs[HIDDEN_NODES];
+    float hidden_errors[HIDDEN_NODES];
+    float weights_hidden_output[HIDDEN_NODES][OUTPUT_NODES];
+    float bias_output[OUTPUT_NODES];
+    float output[OUTPUT_NODES];
+    float output_errors[OUTPUT_NODES];
+} NeuralNetwork;
+
+float sigmoid(float x) {
+    return 1.0 / (1.0 + exp(-x));
+}
+
+float sigmoid_derivative(float x) {
+    return x * (1.0 - x);
+}
+
+void initialize_network(NeuralNetwork *network) {
+    for (int i = 0; i < INPUT_NODES; ++i) {
+        for (int j = 0; j < HIDDEN_NODES; ++j) {
+            network->weights[i][j] = ((float)rand() / RAND_MAX); // Scale to 0-1
+        }
+    }
+
+    for (int i = 0; i < HIDDEN_NODES; ++i) {
+        network->bias_hidden[i] = ((float)rand() / RAND_MAX);
+        for (int j = 0; j < OUTPUT_NODES; ++j) {
+            network->weights_hidden_output[i][j] = ((float)rand() / RAND_MAX);
+        }
+    }
+
+    for (int i = 0; i < OUTPUT_NODES; ++i) {
+        network->bias_output[i] = ((float)rand() / RAND_MAX);
+    }
+}
+
+void forward_propagation(NeuralNetwork *network, float input[INPUT_NODES]) {
+    for (int i = 0; i < HIDDEN_NODES; ++i) {
+        float sum = 0;
+        for (int j = 0; j < INPUT_NODES; ++j) {
+            sum += input[j] * network->weights[j][i];
+        }
+        network->hidden_outputs[i] = sigmoid(sum + network->bias_hidden[i]);
+    }
+
+    for (int i = 0; i < OUTPUT_NODES; ++i) {
+        float sum = 0;
+        for (int j = 0; j < HIDDEN_NODES; ++j) {
+            sum += network->hidden_outputs[j] * network->weights_hidden_output[j][i];
+        }
+        network->output[i] = sigmoid(sum + network->bias_output[i]);
+    }
+}
+
+void backpropagation(NeuralNetwork *network, float input[INPUT_NODES], float target[OUTPUT_NODES]) {
+    for (int i = 0; i < OUTPUT_NODES; ++i) {
+        network->output_errors[i] = target[i] - network->output[i];
+        float delta_output = network->output_errors[i] * sigmoid_derivative(network->output[i]);
+        for (int j = 0; j < HIDDEN_NODES; ++j) {
+            network->weights_hidden_output[j][i] += LEARNING_RATE * delta_output * network->hidden_outputs[j];
+        }
+        network->bias_output[i] += LEARNING_RATE * delta_output;
+    }
+
+    for (int i = 0; i < HIDDEN_NODES; ++i) {
+        float error = 0;
+        for (int j = 0; j < OUTPUT_NODES; ++j) {
+            error += network->output_errors[j] * network->weights_hidden_output[i][j];
+        }
+        network->hidden_errors[i] = error * sigmoid_derivative(network->hidden_outputs[i]);
+        for (int j = 0; j < INPUT_NODES; ++j) {
+            network->weights[j][i] += LEARNING_RATE * network->hidden_errors[i] * input[j];
+        }
+        network->bias_hidden[i] += LEARNING_RATE * network->hidden_errors[i];
+    }
+}
 
 int main(void)
 {
     struct motor_command curr_motor_command;
     // struct motor_training_value curr_training_value;
+    NeuralNetwork network;
+    initialize_network(&network);
 
     // This may need casting, not sure if it will work correctly
 
@@ -103,7 +190,7 @@ int main(void)
 
     struct motor_training_value *training_data = malloc(sizeof(struct motor_training_value) * 200);
 
-    initialize_neural_network();
+    //initialize_neural_network();
 
     // immediately begin running the proportional controller
     printf("\nPROPORTIONAL MODE\n");
@@ -128,9 +215,8 @@ int main(void)
     // this will need to be in while loop
     printf("\nDATA MODE\n");
 
-
     // Set cursor to second line and print sensor readings before printing training
-    
+
     while (strcmp(answer2, "n"))
     {
         printf("Enter a left sensor reading: ");
@@ -150,7 +236,6 @@ int main(void)
         training_data[data_count] = curr_training_value;
 
         data_count++;
-
 
         printf("Continue in data mode? (y/n): ");
         scanf("%s", answer2);
@@ -180,17 +265,20 @@ int main(void)
             training_iteration_count -= data_count - 1;
         }
 
-        printf("Training with data %d -> Left: %.1f, Right: %.1f, LeftSpeed: %.1f, RightSpeed: %.1f\n", curr_training_count, 
-            training_data[curr_training_count].left * 255, training_data[curr_training_count].right * 255, training_data[curr_training_count].left_speed * 100, training_data[curr_training_count].right_speed * 100);
+        printf("Training with data %d -> Left: %.1f, Right: %.1f, LeftSpeed: %.1f, RightSpeed: %.1f\n", curr_training_count,
+               training_data[curr_training_count].left * 255, training_data[curr_training_count].right * 255, training_data[curr_training_count].left_speed * 100, training_data[curr_training_count].right_speed * 100);
         
-        
-        train_neural_network(training_data[curr_training_count]);
+        float inputs[] = {training_data[curr_training_count].left, training_data[curr_training_count].right};
+        float outputs[] = {training_data[curr_training_count].left_speed, training_data[curr_training_count].right_speed};
+
+        forward_propagation(&network, inputs);
+        backpropagation(&network, inputs, outputs);
+
+        // train_neural_network(training_data[curr_training_count]);
         curr_training_count++;
     }
 
     printf("Training complete\n");
-
-
 
     // run neural network
     printf("\nAI MODE\n");
@@ -201,9 +289,11 @@ int main(void)
         scanf("%d", &leftSensor);
         printf("Enter a right sensor reading: ");
         scanf("%d", &rightSensor);
-        curr_motor_command = compute_neural_network(((float)leftSensor) / 255.f, ((float)rightSensor) / 255.f); // needs 0-1 range for input
-        motor(0, curr_motor_command.left_speed * 100);
-        motor(1, curr_motor_command.right_speed * -100);
+        float inputs[] = {leftSensor / 255.f, rightSensor / 255.f};
+        forward_propagation(&network, inputs);
+        //curr_motor_command = compute_neural_network(((float)leftSensor) / 255.f, ((float)rightSensor) / 255.f); // needs 0-1 range for input
+        motor(0, network.output[0] * 100);
+        motor(1, network.output[1] * -100);
     }
 
     free(training_data);
@@ -315,7 +405,6 @@ void train_neural_network(struct motor_training_value currVal)
 
     struct motor_command outputs = compute_neural_network(currVal.left, currVal.right);
 
-
     // compute new outer weight and biases (don't update yet)
     temp_o1.w1 = compute_new_weight(o1.w1, compute_outer_layer_slope(o1.in1, outputs.left_speed, currVal.left_speed));
     temp_o1.w2 = compute_new_weight(o1.w2, compute_outer_layer_slope(o1.in2, outputs.left_speed, currVal.left_speed));
@@ -328,6 +417,10 @@ void train_neural_network(struct motor_training_value currVal)
     temp_o2.b = compute_new_weight(o2.b, compute_outer_layer_slope(-1, outputs.right_speed, currVal.right_speed));
 
     // compute new hidden weight and biases (don't update yet)
+
+    printf("new h1.w1: %f\n", compute_hidden_layer_slope(outputs, currVal, o1.w1, o2.w1, o1.in1, currVal.left));
+    printf("old h1.w1: %f\n", h1.w1);
+
     temp_h1.w1 = compute_new_weight(h1.w1, compute_hidden_layer_slope(outputs, currVal, o1.w1, o2.w1, o1.in1, currVal.left));
     temp_h1.w2 = compute_new_weight(h1.w2, compute_hidden_layer_slope(outputs, currVal, o1.w1, o2.w1, o1.in1, currVal.right));
     temp_h1.b = compute_new_weight(h1.b, compute_hidden_layer_slope(outputs, currVal, o1.w1, o2.w1, o1.in1, -1));
