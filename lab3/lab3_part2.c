@@ -213,7 +213,7 @@ int main(void)
     while (curr_training_count < training_iteration_count)
     {
         // Cycle back to start of dataset if there are more training iterations than data
-        if (curr_training_count > data_count)
+        if (curr_training_count >= data_count)
         {
             curr_training_count = 0;
             training_iteration_count -= data_count - 1;
