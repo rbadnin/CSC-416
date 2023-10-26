@@ -1,3 +1,10 @@
+/**
+    Name:  Riley Badnin and Justin Brunings
+    Lab 2 part 1
+    Description: Implement code which you will use to control the motors on your robot.  
+                 Your function should have the following prototype
+*/
+
 #include "globals.h"
 #include <util/delay.h>
 #include <avr/io.h>

@@ -1,3 +1,9 @@
+/**
+    Name:  Riley Badnin and Justin Brunings
+    Lab 2 part 4
+    Description: Implementation of a line-following program for your robot. 
+*/
+
 #include "globals.h"
 #include <util/delay.h>
 #include <avr/io.h>

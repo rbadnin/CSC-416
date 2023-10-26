@@ -1,3 +1,9 @@
+/**
+    Name:  Riley Badnin and Justin Brunings
+    Lab 2 part 3
+    Description: Implementation of Braitenberg vehicles 3a and 3b
+*/
+
 #include "globals.h"
 #include <util/delay.h>
 #include <avr/io.h>
