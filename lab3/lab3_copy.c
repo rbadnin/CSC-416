@@ -300,33 +300,33 @@ int main(void)
     return 0;
 }
 
-void initialize_neural_network()
-{
-    srand(time(NULL));
+// void initialize_neural_network()
+// {
+//     srand(time(NULL));
 
-    // print_num(rand() % 100);
-    h1.w1 = (float)rand() / (float)RAND_MAX;
-    h1.w2 = (float)rand() / (float)RAND_MAX;
-    h1.b = (float)rand() / (float)RAND_MAX;
+//     // print_num(rand() % 100);
+//     h1.w1 = (float)rand() / (float)RAND_MAX;
+//     h1.w2 = (float)rand() / (float)RAND_MAX;
+//     h1.b = (float)rand() / (float)RAND_MAX;
 
-    h2.w1 = (float)rand() / (float)RAND_MAX;
-    h2.w2 = (float)rand() / (float)RAND_MAX;
-    h2.b = (float)rand() / (float)RAND_MAX;
+//     h2.w1 = (float)rand() / (float)RAND_MAX;
+//     h2.w2 = (float)rand() / (float)RAND_MAX;
+//     h2.b = (float)rand() / (float)RAND_MAX;
 
-    h3.w1 = (float)rand() / (float)RAND_MAX;
-    h3.w2 = (float)rand() / (float)RAND_MAX;
-    h3.b = (float)rand() / (float)RAND_MAX;
+//     h3.w1 = (float)rand() / (float)RAND_MAX;
+//     h3.w2 = (float)rand() / (float)RAND_MAX;
+//     h3.b = (float)rand() / (float)RAND_MAX;
 
-    o1.w1 = (float)rand() / (float)RAND_MAX;
-    o1.w2 = (float)rand() / (float)RAND_MAX;
-    o1.w3 = (float)rand() / (float)RAND_MAX;
-    o1.b = (float)rand() / (float)RAND_MAX;
+//     o1.w1 = (float)rand() / (float)RAND_MAX;
+//     o1.w2 = (float)rand() / (float)RAND_MAX;
+//     o1.w3 = (float)rand() / (float)RAND_MAX;
+//     o1.b = (float)rand() / (float)RAND_MAX;
 
-    o2.w1 = (float)rand() / (float)RAND_MAX;
-    o2.w2 = (float)rand() / (float)RAND_MAX;
-    o2.w3 = (float)rand() / (float)RAND_MAX;
-    o2.b = (float)rand() / (float)RAND_MAX;
-}
+//     o2.w1 = (float)rand() / (float)RAND_MAX;
+//     o2.w2 = (float)rand() / (float)RAND_MAX;
+//     o2.w3 = (float)rand() / (float)RAND_MAX;
+//     o2.b = (float)rand() / (float)RAND_MAX;
+// }
 
 struct motor_command compute_proportional(int left, int right)
 {
@@ -350,113 +350,113 @@ struct motor_command compute_proportional(int left, int right)
     return result;
 }
 
-float activation(float val)
-{
-    return 1.f / (1.f + exp(-1.f * val));
-}
+// float activation(float val)
+// {
+//     return 1.f / (1.f + exp(-1.f * val));
+// }
 
-struct motor_command compute_neural_network(float left, float right)
-{
-    struct motor_command result;
+// struct motor_command compute_neural_network(float left, float right)
+// {
+//     struct motor_command result;
 
-    h1.in1 = left;
-    h1.in2 = right;
+//     h1.in1 = left;
+//     h1.in2 = right;
 
-    h2.in1 = left;
-    h2.in2 = right;
+//     h2.in1 = left;
+//     h2.in2 = right;
 
-    h3.in1 = left;
-    h3.in2 = right;
+//     h3.in1 = left;
+//     h3.in2 = right;
 
-    o1.in1 = activation((h1.in1 * h1.w1) + (h1.in2 * h1.w2) + h1.b);
-    o1.in2 = activation((h2.in1 * h2.w1) + (h2.in2 * h2.w2) + h2.b);
-    o1.in3 = activation((h3.in1 * h3.w1) + (h3.in2 * h3.w2) + h3.b);
+//     o1.in1 = activation((h1.in1 * h1.w1) + (h1.in2 * h1.w2) + h1.b);
+//     o1.in2 = activation((h2.in1 * h2.w1) + (h2.in2 * h2.w2) + h2.b);
+//     o1.in3 = activation((h3.in1 * h3.w1) + (h3.in2 * h3.w2) + h3.b);
 
-    o2.in1 = activation((h1.in1 * h1.w1) + (h1.in2 * h1.w2) + h1.b);
-    o2.in2 = activation((h2.in1 * h2.w1) + (h2.in2 * h2.w2) + h2.b);
-    o2.in3 = activation((h3.in1 * h3.w1) + (h3.in2 * h3.w2) + h3.b);
+//     o2.in1 = activation((h1.in1 * h1.w1) + (h1.in2 * h1.w2) + h1.b);
+//     o2.in2 = activation((h2.in1 * h2.w1) + (h2.in2 * h2.w2) + h2.b);
+//     o2.in3 = activation((h3.in1 * h3.w1) + (h3.in2 * h3.w2) + h3.b);
 
-    result.left_speed = activation((o1.in1 * o1.w1) + (o1.in2 * o1.w2) + (o1.in3 * o1.w3) + o1.b);
+//     result.left_speed = activation((o1.in1 * o1.w1) + (o1.in2 * o1.w2) + (o1.in3 * o1.w3) + o1.b);
 
-    result.right_speed = activation((o2.in1 * o2.w1) + (o2.in2 * o2.w2) + (o2.in3 * o2.w3) + o2.b);
+//     result.right_speed = activation((o2.in1 * o2.w1) + (o2.in2 * o2.w2) + (o2.in3 * o2.w3) + o2.b);
 
-    return result;
-}
+//     return result;
+// }
 
-void print_curr_weights()
-{
-    printf("------------------------------------\n");
-    printf("Weight    o1    o2    h1    h2    h3\n");
-    printf("w1    %6.1f%6.1f%6.1f%6.1f%6.1f\n", o1.w1, o2.w1, h1.w1, h2.w1, h3.w1);
-    printf("w2    %6.1f%6.1f%6.1f%6.1f%6.1f\n", o1.w2, o2.w2, h1.w2, h2.w2, h3.w2);
-    printf("w3    %6.1f%6.1f     -     -     -\n", o1.w3, o2.w3);
-    printf("b     %6.1f%6.1f%6.1f%6.1f%6.1f\n", o1.b, o2.b, h1.b, h2.b, h3.b);
-    printf("------------------------------------\n");
-}
+// void print_curr_weights()
+// {
+//     printf("------------------------------------\n");
+//     printf("Weight    o1    o2    h1    h2    h3\n");
+//     printf("w1    %6.1f%6.1f%6.1f%6.1f%6.1f\n", o1.w1, o2.w1, h1.w1, h2.w1, h3.w1);
+//     printf("w2    %6.1f%6.1f%6.1f%6.1f%6.1f\n", o1.w2, o2.w2, h1.w2, h2.w2, h3.w2);
+//     printf("w3    %6.1f%6.1f     -     -     -\n", o1.w3, o2.w3);
+//     printf("b     %6.1f%6.1f%6.1f%6.1f%6.1f\n", o1.b, o2.b, h1.b, h2.b, h3.b);
+//     printf("------------------------------------\n");
+// }
 
-void train_neural_network(struct motor_training_value currVal)
-{
-    struct hidden_node temp_h1 = {0, 0, 0, 0, 0};
-    struct hidden_node temp_h2 = {0, 0, 0, 0, 0};
-    struct hidden_node temp_h3 = {0, 0, 0, 0, 0};
+// void train_neural_network(struct motor_training_value currVal)
+// {
+//     struct hidden_node temp_h1 = {0, 0, 0, 0, 0};
+//     struct hidden_node temp_h2 = {0, 0, 0, 0, 0};
+//     struct hidden_node temp_h3 = {0, 0, 0, 0, 0};
 
-    struct output_node temp_o1 = {0, 0, 0, 0, 0, 0, 0};
-    struct output_node temp_o2 = {0, 0, 0, 0, 0, 0, 0};
+//     struct output_node temp_o1 = {0, 0, 0, 0, 0, 0, 0};
+//     struct output_node temp_o2 = {0, 0, 0, 0, 0, 0, 0};
 
-    struct motor_command outputs = compute_neural_network(currVal.left, currVal.right);
+//     struct motor_command outputs = compute_neural_network(currVal.left, currVal.right);
 
-    // compute new outer weight and biases (don't update yet)
-    temp_o1.w1 = compute_new_weight(o1.w1, compute_outer_layer_slope(o1.in1, outputs.left_speed, currVal.left_speed));
-    temp_o1.w2 = compute_new_weight(o1.w2, compute_outer_layer_slope(o1.in2, outputs.left_speed, currVal.left_speed));
-    temp_o1.w3 = compute_new_weight(o1.w3, compute_outer_layer_slope(o1.in3, outputs.left_speed, currVal.left_speed));
-    temp_o1.b = compute_new_weight(o1.b, compute_outer_layer_slope(-1, outputs.left_speed, currVal.left_speed));
+//     // compute new outer weight and biases (don't update yet)
+//     temp_o1.w1 = compute_new_weight(o1.w1, compute_outer_layer_slope(o1.in1, outputs.left_speed, currVal.left_speed));
+//     temp_o1.w2 = compute_new_weight(o1.w2, compute_outer_layer_slope(o1.in2, outputs.left_speed, currVal.left_speed));
+//     temp_o1.w3 = compute_new_weight(o1.w3, compute_outer_layer_slope(o1.in3, outputs.left_speed, currVal.left_speed));
+//     temp_o1.b = compute_new_weight(o1.b, compute_outer_layer_slope(-1, outputs.left_speed, currVal.left_speed));
 
-    temp_o2.w1 = compute_new_weight(o2.w1, compute_outer_layer_slope(o2.in1, outputs.right_speed, currVal.right_speed));
-    temp_o2.w2 = compute_new_weight(o2.w2, compute_outer_layer_slope(o2.in2, outputs.right_speed, currVal.right_speed));
-    temp_o2.w3 = compute_new_weight(o2.w3, compute_outer_layer_slope(o2.in3, outputs.right_speed, currVal.right_speed));
-    temp_o2.b = compute_new_weight(o2.b, compute_outer_layer_slope(-1, outputs.right_speed, currVal.right_speed));
+//     temp_o2.w1 = compute_new_weight(o2.w1, compute_outer_layer_slope(o2.in1, outputs.right_speed, currVal.right_speed));
+//     temp_o2.w2 = compute_new_weight(o2.w2, compute_outer_layer_slope(o2.in2, outputs.right_speed, currVal.right_speed));
+//     temp_o2.w3 = compute_new_weight(o2.w3, compute_outer_layer_slope(o2.in3, outputs.right_speed, currVal.right_speed));
+//     temp_o2.b = compute_new_weight(o2.b, compute_outer_layer_slope(-1, outputs.right_speed, currVal.right_speed));
 
-    // compute new hidden weight and biases (don't update yet)
+//     // compute new hidden weight and biases (don't update yet)
 
-    printf("new h1.w1: %f\n", compute_hidden_layer_slope(outputs, currVal, o1.w1, o2.w1, o1.in1, currVal.left));
-    printf("old h1.w1: %f\n", h1.w1);
+//     printf("new h1.w1: %f\n", compute_hidden_layer_slope(outputs, currVal, o1.w1, o2.w1, o1.in1, currVal.left));
+//     printf("old h1.w1: %f\n", h1.w1);
 
-    temp_h1.w1 = compute_new_weight(h1.w1, compute_hidden_layer_slope(outputs, currVal, o1.w1, o2.w1, o1.in1, currVal.left));
-    temp_h1.w2 = compute_new_weight(h1.w2, compute_hidden_layer_slope(outputs, currVal, o1.w1, o2.w1, o1.in1, currVal.right));
-    temp_h1.b = compute_new_weight(h1.b, compute_hidden_layer_slope(outputs, currVal, o1.w1, o2.w1, o1.in1, -1));
+//     temp_h1.w1 = compute_new_weight(h1.w1, compute_hidden_layer_slope(outputs, currVal, o1.w1, o2.w1, o1.in1, currVal.left));
+//     temp_h1.w2 = compute_new_weight(h1.w2, compute_hidden_layer_slope(outputs, currVal, o1.w1, o2.w1, o1.in1, currVal.right));
+//     temp_h1.b = compute_new_weight(h1.b, compute_hidden_layer_slope(outputs, currVal, o1.w1, o2.w1, o1.in1, -1));
 
-    temp_h2.w1 = compute_new_weight(h2.w1, compute_hidden_layer_slope(outputs, currVal, o1.w2, o2.w2, o1.in2, currVal.left));
-    temp_h2.w2 = compute_new_weight(h2.w2, compute_hidden_layer_slope(outputs, currVal, o1.w2, o2.w2, o1.in2, currVal.right));
-    temp_h2.b = compute_new_weight(h2.b, compute_hidden_layer_slope(outputs, currVal, o1.w2, o2.w2, o1.in2, -1));
+//     temp_h2.w1 = compute_new_weight(h2.w1, compute_hidden_layer_slope(outputs, currVal, o1.w2, o2.w2, o1.in2, currVal.left));
+//     temp_h2.w2 = compute_new_weight(h2.w2, compute_hidden_layer_slope(outputs, currVal, o1.w2, o2.w2, o1.in2, currVal.right));
+//     temp_h2.b = compute_new_weight(h2.b, compute_hidden_layer_slope(outputs, currVal, o1.w2, o2.w2, o1.in2, -1));
 
-    temp_h3.w1 = compute_new_weight(h3.w1, compute_hidden_layer_slope(outputs, currVal, o1.w3, o2.w3, o1.in3, currVal.left));
-    temp_h3.w2 = compute_new_weight(h3.w2, compute_hidden_layer_slope(outputs, currVal, o1.w3, o2.w3, o1.in3, currVal.right));
-    temp_h3.b = compute_new_weight(h3.b, compute_hidden_layer_slope(outputs, currVal, o1.w3, o2.w3, o1.in3, -1));
+//     temp_h3.w1 = compute_new_weight(h3.w1, compute_hidden_layer_slope(outputs, currVal, o1.w3, o2.w3, o1.in3, currVal.left));
+//     temp_h3.w2 = compute_new_weight(h3.w2, compute_hidden_layer_slope(outputs, currVal, o1.w3, o2.w3, o1.in3, currVal.right));
+//     temp_h3.b = compute_new_weight(h3.b, compute_hidden_layer_slope(outputs, currVal, o1.w3, o2.w3, o1.in3, -1));
 
-    // update all weights and biases
-    print_curr_weights();
+//     // update all weights and biases
+//     print_curr_weights();
 
-    o1.w1 = temp_o1.w1;
-    o1.w2 = temp_o1.w2;
-    o1.w3 = temp_o1.w3;
-    o1.b = temp_o1.b;
+//     o1.w1 = temp_o1.w1;
+//     o1.w2 = temp_o1.w2;
+//     o1.w3 = temp_o1.w3;
+//     o1.b = temp_o1.b;
 
-    o2.w1 = temp_o2.w1;
-    o2.w2 = temp_o2.w2;
-    o2.w3 = temp_o2.w3;
-    o2.b = temp_o2.b;
+//     o2.w1 = temp_o2.w1;
+//     o2.w2 = temp_o2.w2;
+//     o2.w3 = temp_o2.w3;
+//     o2.b = temp_o2.b;
 
-    h1.w1 = temp_h1.w1;
-    h1.w2 = temp_h1.w2;
-    h1.b = temp_h1.b;
+//     h1.w1 = temp_h1.w1;
+//     h1.w2 = temp_h1.w2;
+//     h1.b = temp_h1.b;
 
-    h2.w1 = temp_h2.w1;
-    h2.w2 = temp_h2.w2;
-    h2.b = temp_h2.b;
+//     h2.w1 = temp_h2.w1;
+//     h2.w2 = temp_h2.w2;
+//     h2.b = temp_h2.b;
 
-    h3.w1 = temp_h3.w1;
-    h3.w2 = temp_h3.w2;
-    h3.b = temp_h3.b;
+//     h3.w1 = temp_h3.w1;
+//     h3.w2 = temp_h3.w2;
+//     h3.b = temp_h3.b;
 
-    return;
-}
+//     return;
+// }

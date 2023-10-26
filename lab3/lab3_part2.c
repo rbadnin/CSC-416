@@ -59,7 +59,7 @@ float compute_outer_layer_slope(float out_h, float out_o, float target)
 {
     clear_screen();
     print_string("diff: ");
-    print_num( (out_o - target) * 100);
+    print_num((out_o - target) * 100);
     _delay_ms(100);
     return (out_o - target) * (out_o * (1.f - out_o)) * out_h;
 }
@@ -94,12 +94,120 @@ struct hidden_node h3 = {0, 0, 0, 0, 0};
 struct output_node o1 = {0, 0, 0, 0, 0, 0, 0};
 struct output_node o2 = {0, 0, 0, 0, 0, 0, 0};
 
+// Define neural network structure
+#define INPUT_NODES 2
+#define HIDDEN_NODES 3
+#define OUTPUT_NODES 2
+#define LEARNING_RATE 0.1
+
+typedef struct
+{
+    float weights[INPUT_NODES][HIDDEN_NODES];
+    float bias_hidden[HIDDEN_NODES];
+    float hidden_outputs[HIDDEN_NODES];
+    float hidden_errors[HIDDEN_NODES];
+    float weights_hidden_output[HIDDEN_NODES][OUTPUT_NODES];
+    float bias_output[OUTPUT_NODES];
+    float output[OUTPUT_NODES];
+    float output_errors[OUTPUT_NODES];
+} NeuralNetwork;
+
+float sigmoid(float x)
+{
+    return 1.0 / (1.0 + exp(-x));
+}
+
+float sigmoid_derivative(float x)
+{
+    return x * (1.0 - x);
+}
+
+void initialize_network(NeuralNetwork *network)
+{
+    for (int i = 0; i < INPUT_NODES; ++i)
+    {
+        for (int j = 0; j < HIDDEN_NODES; ++j)
+        {
+            network->weights[i][j] = ((float)rand() / RAND_MAX); // Scale to 0-1
+        }
+    }
+
+    for (int i = 0; i < HIDDEN_NODES; ++i)
+    {
+        network->bias_hidden[i] = ((float)rand() / RAND_MAX);
+        for (int j = 0; j < OUTPUT_NODES; ++j)
+        {
+            network->weights_hidden_output[i][j] = ((float)rand() / RAND_MAX);
+        }
+    }
+
+    for (int i = 0; i < OUTPUT_NODES; ++i)
+    {
+        network->bias_output[i] = ((float)rand() / RAND_MAX);
+    }
+}
+
+void forward_propagation(NeuralNetwork *network, float input[INPUT_NODES])
+{
+    for (int i = 0; i < HIDDEN_NODES; ++i)
+    {
+        float sum = 0;
+        for (int j = 0; j < INPUT_NODES; ++j)
+        {
+            sum += input[j] * network->weights[j][i];
+        }
+        network->hidden_outputs[i] = sigmoid(sum + network->bias_hidden[i]);
+    }
+
+    for (int i = 0; i < OUTPUT_NODES; ++i)
+    {
+        float sum = 0;
+        for (int j = 0; j < HIDDEN_NODES; ++j)
+        {
+            sum += network->hidden_outputs[j] * network->weights_hidden_output[j][i];
+        }
+        network->output[i] = sigmoid(sum + network->bias_output[i]);
+    }
+}
+
+void backpropagation(NeuralNetwork *network, float input[INPUT_NODES], float target[OUTPUT_NODES])
+{
+    for (int i = 0; i < OUTPUT_NODES; ++i)
+    {
+        network->output_errors[i] = target[i] - network->output[i];
+        float delta_output = network->output_errors[i] * sigmoid_derivative(network->output[i]);
+        for (int j = 0; j < HIDDEN_NODES; ++j)
+        {
+            network->weights_hidden_output[j][i] += LEARNING_RATE * delta_output * network->hidden_outputs[j];
+        }
+        network->bias_output[i] += LEARNING_RATE * delta_output;
+    }
+
+    for (int i = 0; i < HIDDEN_NODES; ++i)
+    {
+        float error = 0;
+        for (int j = 0; j < OUTPUT_NODES; ++j)
+        {
+            error += network->output_errors[j] * network->weights_hidden_output[i][j];
+        }
+        network->hidden_errors[i] = error * sigmoid_derivative(network->hidden_outputs[i]);
+        for (int j = 0; j < INPUT_NODES; ++j)
+        {
+            network->weights[j][i] += LEARNING_RATE * network->hidden_errors[i] * input[j];
+        }
+        network->bias_hidden[i] += LEARNING_RATE * network->hidden_errors[i];
+    }
+}
+
 int main(void)
 {
     init();
 
     struct motor_command curr_motor_command;
     struct motor_training_value curr_training_value;
+
+    NeuralNetwork network;
+    initialize_network(&network);
 
     // This may need casting, not sure if it will work correctly
 
@@ -163,8 +271,9 @@ int main(void)
         print_string(" ");
         print_num(rightSensor);
 
+        struct motor_training_value curr_training_value;
         curr_motor_command = compute_proportional(leftSensor, rightSensor);
-
+        
         // convert everything into 0-1 range before training
         curr_training_value.left = ((float)leftSensor) / (float)255;
         curr_training_value.right = ((float)rightSensor) / (float)255;
@@ -213,7 +322,7 @@ int main(void)
         _delay_ms(50);
     }
 
-    training_iteration_count *= 10;
+    training_iteration_count *= 100;
 
     uint8_t curr_training_count = 0;
     while (curr_training_count < training_iteration_count)
@@ -225,7 +334,13 @@ int main(void)
             training_iteration_count -= data_count - 1;
         }
 
-        train_neural_network(training_data[curr_training_count]);
+        float inputs[] = {training_data[curr_training_count].left, training_data[curr_training_count].right};
+        float outputs[] = {training_data[curr_training_count].left_speed, training_data[curr_training_count].right_speed};
+
+        forward_propagation(&network, inputs);
+        backpropagation(&network, inputs, outputs);
+
+        // train_neural_network(training_data[curr_training_count]);
         curr_training_count++;
     }
 
@@ -245,15 +360,24 @@ int main(void)
         lcd_cursor(0, 1);
         leftSensor = analog(0);
         rightSensor = analog(1);
-        curr_motor_command = compute_neural_network(((float)leftSensor) / 255.f, ((float)rightSensor) / 255.f); // needs 0-1 range for input
-        print_num(curr_motor_command.left_speed * 100);
+        // curr_motor_command = compute_neural_network(((float)leftSensor) / 255.f, ((float)rightSensor) / 255.f); // needs 0-1 range for input
+        //  print_num(curr_motor_command.left_speed * 100);
+        //  print_string(" ");
+        //  print_num(curr_motor_command.right_speed * 100);
+
+        // motor(0, curr_motor_command.left_speed * 100);
+        // motor(1, curr_motor_command.right_speed * -100);
+
+        float inputs[] = {(float)leftSensor / 255.f, (float)rightSensor / 255.f};
+        forward_propagation(&network, inputs);
+        // curr_motor_command = compute_neural_network(((float)leftSensor) / 255.f, ((float)rightSensor) / 255.f); // needs 0-1 range for input
+        motor(0, network.output[0] * 100);
+        motor(1, network.output[1] * -100);
+        clear_screen();
+        print_num(network.output[0] * 100);
         print_string(" ");
-        print_num(curr_motor_command.right_speed * 100);
-
-        motor(0, curr_motor_command.left_speed * 100);
-        motor(1, curr_motor_command.right_speed * -100);
-        _delay_ms(200);
-
+        print_num(network.output[1] * 100);
+        _delay_ms(100);
     }
 
     free(training_data);
