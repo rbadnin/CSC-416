@@ -187,12 +187,18 @@ int main(void)
     // Drive in proportional controller mode until button is pressed
     while (!get_btn())
     {
+        clear_screen();
         leftSensor = analog(0);
         rightSensor = analog(1);
         curr_motor_command = compute_proportional(leftSensor, rightSensor);
         motor(0, curr_motor_command.left_speed);
         motor(1, curr_motor_command.right_speed);
-        _delay_ms(200);
+        print_num(curr_motor_command.left_speed);
+        print_string(" ");
+        print_num(curr_motor_command.right_speed * -1);
+                _delay_ms(20);
+
+
     }
 
     while (get_btn())
@@ -289,10 +295,13 @@ int main(void)
 
     _delay_ms(2000);
 
+    clear_screen();
+    print_string("AI MODE");
+
     while (1)
     {
         clear_screen();
-        print_string("AI MODE");
+
         lcd_cursor(0, 1);
         leftSensor = analog(0);
         rightSensor = analog(1);
@@ -301,6 +310,12 @@ int main(void)
         forward_propagation(&network, inputs);
         motor(0, network.output[0] * 100);
         motor(1, network.output[1] * -100);
+
+        print_num(network.output[0] * 100);
+        print_string(" ");
+        print_num(network.output[1] * 100);
+
+        _delay_ms(20);
     }
 
     free(training_data);
