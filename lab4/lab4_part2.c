@@ -11,7 +11,7 @@
 #define FREE_SPACE 0
 #define TOWER 1
 #define NUM_PARTICLES 100 // FIXME: adjust as needed
-#define SD_THRESHOLD 10 // FIXME: choose a better value for this
+#define SD_THRESHOLD 1 
 #define ADVANCE_TICKS 5 // FIXME: choose proper ticks
 #define ADVANCE_DEGREES 3 // FIXME: when I move the robot x ticks forward, how many degrees is that on the circle?
 #define TOWER_TICK_WIDTH 15 // FIXME: choose a proper value for this
@@ -29,6 +29,7 @@ struct particle
     int category;
     float weight;
     float summed_weight;
+    int src_particle;
 };
 
 struct sensor_info
@@ -36,27 +37,27 @@ struct sensor_info
     int a, b, c, d;
 };
 
+int compare(const void *a, const void *b);
 float generate_sensor_reading(struct sensor_info* tower_sensor, struct sensor_info* free_space_sensor, struct map_info* map, float curr_robot_position);
 void get_user_inputs(struct map_info* map, float* robot_position);
-struct particle* generate_particles(int numParticles);
-float calculate_particle_sd(struct particle* particles, int num_particles);
+void generate_particles(struct particle* particles);
+float calculate_particle_sd(struct particle* particles);
 float get_motion_noise();
 void categorize_particle(struct map_info* map, struct particle* particle);
 void compute_weight(float sensor_reading, struct sensor_info* sensor, struct particle* particle);
-void resample_particles(struct particle* particles, struct particle* new_particles, int num_particles);
-void normalize_weights(float weight_sum, struct particle* particles, int num_particles);
+void resample_particles(struct particle* particles, struct particle* new_particles);
+void normalize_weights(float weight_sum, struct particle* particles);
 void print_particles(struct particle* particles); // TODO: delete
 
 int main(void)
 {
-    int i;
+    int i, degree_ct = 0;
     char c; //TODO: delete for robot version
     float weight, weight_sum, robot_position, sensor_reading, final_location_sum, final_location;
     struct sensor_info tower_sensor;
     struct sensor_info free_space_sensor;
     struct map_info map;
-    struct particle* particles;
-    struct particle* new_particles = malloc(NUM_PARTICLES * sizeof(struct particle));
+    struct particle particles[NUM_PARTICLES], new_particles[NUM_PARTICLES];
     struct particle currParticle;
 
     get_user_inputs(&map, &robot_position);
@@ -72,18 +73,25 @@ int main(void)
     free_space_sensor.c = 220;
     free_space_sensor.d = 240;
 
-    particles = generate_particles(NUM_PARTICLES);
+    generate_particles(particles);
 
     printf("DETERMINING ROBOT LOCATION\n\n");
 
-    while (calculate_particle_sd(particles, NUM_PARTICLES) > SD_THRESHOLD)
+    while (calculate_particle_sd(particles) > SD_THRESHOLD && degree_ct < 360) // TODO: make this run a certain amt of iterations too
     {
         // TODO: delete this scan for robot program
-        printf("Click enter to continue.\n");
+        printf("Click enter to continue (Hold enter to complete program).");
         scanf("%c", &c);
 
+        robot_position += ADVANCE_DEGREES;
+        degree_ct += ADVANCE_DEGREES;
+        if (robot_position >= 360)
+            robot_position = robot_position - 360;
+
+        printf("\n\nMoving robot %d degrees forward, and is now at position %.1f\n", ADVANCE_DEGREES, robot_position); // TODO: replace with moving the actual robot ADVANCE_TICKS forward
+
         sensor_reading = generate_sensor_reading(&tower_sensor, &free_space_sensor, &map, robot_position);
-        printf("Current robot location: %.1f, sensor reading: %.1f\n\n", robot_position, sensor_reading);
+        printf("Generated sensor reading: %.1f\n", sensor_reading);
 
         weight_sum = 0.0;
 
@@ -106,28 +114,30 @@ int main(void)
             weight_sum += particles[i].weight;
         }
 
-        normalize_weights(weight_sum, particles, NUM_PARTICLES);
+        normalize_weights(weight_sum, particles);
 
-        resample_particles(particles, new_particles, NUM_PARTICLES);
+        resample_particles(particles, new_particles);
+        for (i = 0; i < NUM_PARTICLES; i++)
+            particles[i] = new_particles[i];
 
-        robot_position += ADVANCE_TICKS;
-        if (robot_position >= 360)
-            robot_position = robot_position - 360;
-
-        printf("\n\nMoving robot %d ticks forward, and is now at position %.1f\n", ADVANCE_TICKS, robot_position); // TODO: replace with moving the actual robot ADVANCE_TICKS forward
-        printf("SD: %.3f\n", calculate_particle_sd(particles, NUM_PARTICLES));
+        printf("Current SD: %.3f\n\n", calculate_particle_sd(particles));
     }
 
-    // TODO: check this works
-    final_location_sum = 0;
-    for (i = 0; i < NUM_PARTICLES; i++)
-        final_location_sum += particles[i].location;
-    final_location = final_location_sum / NUM_PARTICLES;
+    // FIXME: Make more accurate, and make it work across the 359 -> 0 transition
+    qsort(particles, NUM_PARTICLES, sizeof(struct particle), compare);
+    final_location = particles[NUM_PARTICLES/2].location;
 
     printf("\n\nFINAL LOCATION: %.2f\n\n", final_location);
+}
 
-    free(particles);
-    free(new_particles);
+
+int compare(const void *a, const void *b) 
+{
+  
+    struct particle *particleA = (struct particle *) a;
+    struct particle *particleB = (struct particle *) b;
+  
+    return (particleB->location - particleA->location);
 }
 
 
@@ -195,41 +205,42 @@ void get_user_inputs(struct map_info* map, float* robot_position)
 }
 
 
-struct particle* generate_particles(int num_particles)
+void generate_particles(struct particle* particles)
 {
-    struct particle* particles = malloc(num_particles * sizeof(struct particle));
-    float spacing_increment = 359 / (float) num_particles;
+    float spacing_increment = 359 / (float) NUM_PARTICLES;
     float curr_loc_num = 0;
     int i;
 
     printf("\nGENERATING PARTICLES\n\n");
 
-    for (i = 0; i < num_particles; i++)
+    for (i = 0; i < NUM_PARTICLES; i++)
     {
         particles[i].location = curr_loc_num;
+        particles[i].weight = 0.0;
+        particles[i].summed_weight = 0.0;
+        particles[i].category = 0;
+        particles[i].src_particle = -1;
         curr_loc_num += spacing_increment;
     }
-
-    return particles;
 }
 
 
-float calculate_particle_sd(struct particle* particles, int num_particles)
+float calculate_particle_sd(struct particle* particles)
 {
     float sum = 0.0;
     float mean;
     float SD = 0.0;
     int i;
 
-    for (i = 0; i < num_particles; ++i) 
+    for (i = 0; i < NUM_PARTICLES; ++i) 
         sum += particles[i].location;
 
-    mean = sum / num_particles;
+    mean = sum / NUM_PARTICLES;
 
-    for (i = 0; i < num_particles; ++i)
+    for (i = 0; i < NUM_PARTICLES; ++i)
         SD += pow(particles[i].location - mean, 2);
 
-    return sqrt(SD / num_particles);
+    return sqrt(SD / NUM_PARTICLES);
 }
 
 
@@ -286,70 +297,73 @@ void compute_weight(float sensor_reading, struct sensor_info* sensor, struct par
 }
 
 
-void normalize_weights(float weight_sum, struct particle* particles, int num_particles)
+void normalize_weights(float weight_sum, struct particle* particles)
 {
     int i;
 
-    for (i = 0; i < num_particles; i++)
+    for (i = 0; i < NUM_PARTICLES; i++)
         particles[i].weight = particles[i].weight / weight_sum;
 }
 
 
-void resample_particles(struct particle* particles, struct particle* new_particles, int num_particles)
+void resample_particles(struct particle* particles, struct particle* new_particles)
 {
-    int i, j, random_amt, index_to_replace, new_index;
+    int i, j, random_amt, index_to_replace, prev_index;
     float curr_index;
-    float running_sum = 0;
-
-    print_particles(particles);
-
+    struct particle prev;
+    float running_sum = 0, prev_summed_weight;
+        
     // generate running sum 
-    for (i = 0; i < num_particles; i++)
+    for (i = 0; i < NUM_PARTICLES; i++)
     {
         running_sum += particles[i].weight;
         particles[i].summed_weight = running_sum;
     } 
 
     // generate new particles
-    for (i = 1; i <= num_particles; i++)
+    for (i = 0; i < NUM_PARTICLES; i++)
     {
-        curr_index = ((float) i)/((float) num_particles);
-        
-        for (j = 0; j < num_particles; j++)
+        curr_index = ((float) i + 1)/((float) NUM_PARTICLES);
+        prev_index = 0;
+        prev_summed_weight = 0.0;
+
+        for (j = 0; j < NUM_PARTICLES; j++)
         {
-            if (particles[j].summed_weight > curr_index)
+            if (particles[j].summed_weight >= curr_index)
             {
-                if (j == 0)
-                    new_particles[i - 1] = particles[0];
-                else
-                    new_particles[i - 1] = particles[j - 1];
+                new_particles[i] = particles[prev_index];
+                new_particles[i].src_particle = prev_index;
                 break;
+            }
+
+
+            if (particles[j].summed_weight > prev_summed_weight)
+            {
+                prev_index = j;
+                prev_summed_weight = particles[j].summed_weight;
             }
         }
     }
 
     // make 5% of new particles random
-    random_amt = .05 * num_particles;
+    random_amt = .05 * NUM_PARTICLES;
     for (i = 0; i < random_amt; i++)
     {
         index_to_replace = rand() % 100;
-        new_index = rand() % 100;
-        new_particles[index_to_replace] = particles[new_index];
+        new_particles[index_to_replace].location = rand() % 360;
+        new_particles[index_to_replace].src_particle = -1;
     }
-
-    particles = new_particles;
-    print_particles(particles);
 }
 
 // TODO: delete
 void print_particles(struct particle* particles)
 {
     int i;
-    printf("\nParticle #     Location       Weight         Summed Weight      Category\n");
+    printf("\nParticle #     Location       Weight         Summed Weight      Category     Src Part\n");
 
     for (i = 0; i < NUM_PARTICLES; i++)
     {
-        printf("%10d%13.3f%13.3f%22.3f%14d\n", i, particles[i].location, particles[i].weight, particles[i].summed_weight, particles[i].category);
+        printf("%10d%13.3f%13.3f%22.3f%14d%12d\n", i, particles[i].location, particles[i].weight, particles[i].summed_weight, particles[i].category, particles[i].src_particle);
     }
     
 }
