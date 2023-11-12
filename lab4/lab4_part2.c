@@ -47,7 +47,9 @@ void categorize_particle(struct map_info* map, struct particle* particle);
 void compute_weight(float sensor_reading, struct sensor_info* sensor, struct particle* particle);
 void resample_particles(struct particle* particles, struct particle* new_particles);
 void normalize_weights(float weight_sum, struct particle* particles);
-void print_particles(struct particle* particles); // TODO: delete
+float determine_location(float weight_sum, struct particle* particles);
+
+
 
 int main(void)
 {
@@ -77,7 +79,7 @@ int main(void)
 
     printf("DETERMINING ROBOT LOCATION\n\n");
 
-    while (calculate_particle_sd(particles) > SD_THRESHOLD && degree_ct < 360) // TODO: make this run a certain amt of iterations too
+    while (calculate_particle_sd(particles) > SD_THRESHOLD && degree_ct < 360) 
     {
         // TODO: delete this scan for robot program
         printf("Click enter to continue (Hold enter to complete program).");
@@ -123,11 +125,16 @@ int main(void)
         printf("Current SD: %.3f\n\n", calculate_particle_sd(particles));
     }
 
-    // FIXME: Make more accurate, and make it work across the 359 -> 0 transition
-    qsort(particles, NUM_PARTICLES, sizeof(struct particle), compare);
-    final_location = particles[NUM_PARTICLES/2].location;
-
+    final_location = determine_location(weight_sum, particles);
     printf("\n\nFINAL LOCATION: %.2f\n\n", final_location);
+}
+
+
+// FIXME: Make more accurate, and make it work across the 359 -> 0 transition
+float determine_location(float weight_sum, struct particle* particles)
+{
+    qsort(particles, NUM_PARTICLES, sizeof(struct particle), compare);
+    return particles[NUM_PARTICLES/2].location;
 }
 
 
