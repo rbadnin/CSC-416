@@ -11,10 +11,10 @@
 #define FREE_SPACE 0
 #define TOWER 1
 #define NUM_PARTICLES 100 // FIXME: adjust as needed
-#define SD_THRESHOLD 1 
+#define SD_THRESHOLD 3 
 #define ADVANCE_TICKS 5 // FIXME: choose proper ticks
 #define ADVANCE_DEGREES 3 // FIXME: when I move the robot x ticks forward, how many degrees is that on the circle?
-#define TOWER_TICK_WIDTH 15 // FIXME: choose a proper value for this
+#define TOWER_TICK_WIDTH 10.56 // TODO: Check this
 
 struct map_info
 {
@@ -47,8 +47,7 @@ void categorize_particle(struct map_info* map, struct particle* particle);
 void compute_weight(float sensor_reading, struct sensor_info* sensor, struct particle* particle);
 void resample_particles(struct particle* particles, struct particle* new_particles);
 void normalize_weights(float weight_sum, struct particle* particles);
-float determine_location(float weight_sum, struct particle* particles);
-
+void print_particles(struct particle* particles); // TODO: delete
 
 
 int main(void)
@@ -79,7 +78,7 @@ int main(void)
 
     printf("DETERMINING ROBOT LOCATION\n\n");
 
-    while (calculate_particle_sd(particles) > SD_THRESHOLD && degree_ct < 360) 
+    while (calculate_particle_sd(particles) > SD_THRESHOLD || degree_ct < 360) 
     {
         // TODO: delete this scan for robot program
         printf("Click enter to continue (Hold enter to complete program).");
@@ -117,34 +116,33 @@ int main(void)
         }
 
         normalize_weights(weight_sum, particles);
-
         resample_particles(particles, new_particles);
+
+        // replace old particles with new ones, and sort the list by location
         for (i = 0; i < NUM_PARTICLES; i++)
             particles[i] = new_particles[i];
+        qsort(particles, NUM_PARTICLES, sizeof(struct particle), compare);
 
         printf("Current SD: %.3f\n\n", calculate_particle_sd(particles));
     }
 
-    final_location = determine_location(weight_sum, particles);
+    /**
+        Note: the final location is determined by calculating a median.
+        this method doesn't take into account the circular nature of the data,
+        but because the robot movement is stopped by a SD < 1, it will never run
+        into this edge case.
+    */
+    final_location = particles[NUM_PARTICLES/2].location;
     printf("\n\nFINAL LOCATION: %.2f\n\n", final_location);
-}
-
-
-// FIXME: Make more accurate, and make it work across the 359 -> 0 transition
-float determine_location(float weight_sum, struct particle* particles)
-{
-    qsort(particles, NUM_PARTICLES, sizeof(struct particle), compare);
-    return particles[NUM_PARTICLES/2].location;
 }
 
 
 int compare(const void *a, const void *b) 
 {
-  
     struct particle *particleA = (struct particle *) a;
     struct particle *particleB = (struct particle *) b;
   
-    return (particleB->location - particleA->location);
+    return (particleA->location - particleB->location);
 }
 
 
@@ -239,15 +237,16 @@ float calculate_particle_sd(struct particle* particles)
     float SD = 0.0;
     int i;
 
-    for (i = 0; i < NUM_PARTICLES; ++i) 
+    // Note: This method removes the outlying 10% of particles for calculation
+    for (i = (.05 * NUM_PARTICLES); i < (NUM_PARTICLES - (.05 * NUM_PARTICLES)); i++) 
         sum += particles[i].location;
 
-    mean = sum / NUM_PARTICLES;
+    mean = sum / (NUM_PARTICLES - (.1 * NUM_PARTICLES));
 
-    for (i = 0; i < NUM_PARTICLES; ++i)
+    for (i = (.05 * NUM_PARTICLES); i < (NUM_PARTICLES - (.05 * NUM_PARTICLES)); i++)
         SD += pow(particles[i].location - mean, 2);
 
-    return sqrt(SD / NUM_PARTICLES);
+    return sqrt(SD / (NUM_PARTICLES - (.1 * NUM_PARTICLES)));
 }
 
 
@@ -319,7 +318,7 @@ void resample_particles(struct particle* particles, struct particle* new_particl
     float curr_index;
     struct particle prev;
     float running_sum = 0, prev_summed_weight;
-        
+
     // generate running sum 
     for (i = 0; i < NUM_PARTICLES; i++)
     {
