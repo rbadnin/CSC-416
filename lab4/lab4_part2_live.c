@@ -1,3 +1,8 @@
+/**
+    Justin Brunings and Riley Badnin
+    Lab 4 (Live version): Determines robot location and knocks down target tower, given a map
+*/
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,11 +29,11 @@
 
 #define FREE_SPACE 0
 #define TOWER 1
-#define NUM_PARTICLES 100 // FIXME: adjust as needed
+#define NUM_PARTICLES 100
 #define SD_THRESHOLD 5
-#define ADVANCE_TICKS 5        // FIXME: choose proper ticks
-#define ADVANCE_DEGREES 4.5    // FIXME: when I move the robot x ticks forward, how many degrees is that on the circle?
-#define TOWER_TICK_WIDTH 10.56 // FIXME: choose a proper value for this
+#define ADVANCE_TICKS 5        
+#define ADVANCE_DEGREES 4.5   
+#define TOWER_TICK_WIDTH 10.56 
 
 void init_encoder()
 {
@@ -88,7 +93,6 @@ struct motor_command
 
 void motor(int num, int speed)
 {
-    // printf("Speed running: %d\n", speed);
     set_servo(num, 127 + (speed * 0.3));
 }
 
@@ -139,42 +143,23 @@ float determine_location(float weight_sum, struct particle *particles);
 int main(void)
 {
     int i, degree_ct = 0;
-    char c; // TODO: delete for robot version
-    float weight, weight_sum, sensor_reading, final_location_sum, robot_location;
+    float weight_sum, sensor_reading, robot_location;
     struct sensor_info tower_sensor;
     struct sensor_info free_space_sensor;
     struct map_info map;
     struct particle particles[NUM_PARTICLES], new_particles[NUM_PARTICLES];
-    struct particle currParticle;
 
     init();
     init_encoder();
     motor(0, 0);
     motor(1, 0);
 
-    // int tickCount = 0;
-    // while (!get_btn())
-    // {
-    // }
-
-    // _delay_ms(2000);
-
-    // while (!get_btn())
-    // {
-    //     struct motor_command command = compute_proportional(analog(0), analog(1));
-    //     motor(0, command.left_speed);
-    //     motor(1, command.right_speed);
-    //     clear_screen();
-    //     print_num(left_encoder);
-    //     _delay_ms(200);
-    // }
-
-    // get_user_inputs(&map);
-    map.num_towers = 3;
-    map.target_tower = 2;
-    map.tower_locations[0] = 0;
-    map.tower_locations[1] = 90;
-    map.tower_locations[2] = 225;
+    get_user_inputs(&map);
+    // map.num_towers = 3;
+    // map.target_tower = 2;
+    // map.tower_locations[0] = 0;
+    // map.tower_locations[1] = 90;
+    // map.tower_locations[2] = 225;
 
     // TODO: Replace with actual readings
     tower_sensor.a = 60;
@@ -194,26 +179,12 @@ int main(void)
     }
 
 
-    // printf("DETERMINING ROBOT LOCATION\n\n");
-
     while (calculate_particle_sd(particles) > SD_THRESHOLD || degree_ct < 360)
     {
-        // TODO: delete this scan for robot program
-        // printf("Click enter to continue (Hold enter to complete program).");
-        // scanf("%c", &c);
-
         advance_robot();
-        // robot_position += ADVANCE_DEGREES;
         degree_ct += ADVANCE_DEGREES;
-        // if (robot_position >= 360)
-        //     robot_position = robot_position - 360;
 
-        // printf("\n\nMoving robot %d degrees forward, and is now at position %.1f\n", ADVANCE_DEGREES, robot_position); // TODO: replace with moving the actual robot ADVANCE_TICKS forward
-
-        // sensor_reading = generate_sensor_reading(&tower_sensor, &free_space_sensor, &map, robot_position);
-        sensor_reading = analog(4); // may need to change
-
-        // printf("Generated sensor reading: %.1f\n", sensor_reading);
+        sensor_reading = analog(4);
 
         weight_sum = 0.0;
 
@@ -248,8 +219,6 @@ int main(void)
         lcd_cursor(0, 1);
         print_num(sensor_reading);
         _delay_ms(20);
-
-        // printf("Current SD: %.3f\n\n", calculate_particle_sd(particles));
     }
 
     robot_location = particles[NUM_PARTICLES / 2].location;
@@ -270,17 +239,15 @@ int main(void)
     motor(0, 100);
     motor(1, 100);
 
-    _delay_ms(850); // change for how long a 90 degree turn is
+    _delay_ms(850); // ow long a 90 degree turn is
 
     while (1)
     {
         motor(0, 50);
         motor(1, -50);
     }
-    // printf("\n\nFINAL LOCATION: %.2f\n\n", final_location);
 }
 
-// need to measure out what 3 degrees is then advance the motors using the proportional controller until 3 degrees have been measured
 void advance_robot()
 {
     int stop = left_encoder + ADVANCE_TICKS;
@@ -332,12 +299,6 @@ void get_user_inputs(struct map_info *map)
 {
     int num_towers = 2;
 
-    // printf("\n---------------------------------\nLAB 4\n---------------------------------\n\n");
-
-    // printf("INITIALIZATION\n\n");
-
-    // printf("input the number of towers on the map (between 2 and 4): ");
-
     uint8_t yMove = 0;
     while (!get_btn())
     {
@@ -383,8 +344,6 @@ void get_user_inputs(struct map_info *map)
 
         map->tower_locations[i] = currLoc;
         _delay_ms(500);
-        // printf("input the location of tower #%d: ", (i + 1));
-        // scanf("%f", &(map->tower_locations[i]));
     }
 
     int vader_loc = 1;
@@ -405,24 +364,6 @@ void get_user_inputs(struct map_info *map)
     }
 
     map->target_tower = vader_loc - 1;
-
-    // printf("input the target tower: ");
-    // scanf("%d", &(map->target_tower));
-    // map->target_tower--;
-
-    // printf("\n\t→ map values received: %d towers at locations ", map->num_towers);
-
-    // for (i = 0; i < map->num_towers; i++)
-    // {
-    //     printf("%.1f, ", map->tower_locations[i]);
-    // }
-
-    // printf("and target tower is tower #%d\n\n", (map->target_tower + 1));
-
-    // printf("input the robot starting position: ");
-    // scanf("%f", robot_position);
-
-    // printf("\n\t→ robot is starting at position %.1f\n\n", *robot_position);
 }
 
 void generate_particles(struct particle *particles)
@@ -430,8 +371,6 @@ void generate_particles(struct particle *particles)
     float spacing_increment = 359 / (float)NUM_PARTICLES;
     float curr_loc_num = 0;
     int i;
-
-    // printf("\nGENERATING PARTICLES\n\n");
 
     for (i = 0; i < NUM_PARTICLES; i++)
     {
@@ -524,7 +463,6 @@ void resample_particles(struct particle *particles, struct particle *new_particl
 {
     int i, j, random_amt, index_to_replace, prev_index;
     float curr_index;
-    struct particle prev;
     float running_sum = 0, prev_summed_weight;
 
     // generate running sum
@@ -565,17 +503,5 @@ void resample_particles(struct particle *particles, struct particle *new_particl
         index_to_replace = rand() % 100;
         new_particles[index_to_replace].location = rand() % 360;
         new_particles[index_to_replace].src_particle = -1;
-    }
-}
-
-// TODO: delete
-void print_particles(struct particle *particles)
-{
-    int i;
-    printf("\nParticle #     Location       Weight         Summed Weight      Category     Src Part\n");
-
-    for (i = 0; i < NUM_PARTICLES; i++)
-    {
-        printf("%10d%13.3f%13.3f%22.3f%14d%12d\n", i, particles[i].location, particles[i].weight, particles[i].summed_weight, particles[i].category, particles[i].src_particle);
     }
 }

@@ -1,3 +1,8 @@
+/**
+    Justin Brunings and Riley Badnin
+    Lab 4 (Simulation version): Simulates determining robot location, given a map
+*/
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,11 +15,11 @@
 
 #define FREE_SPACE 0
 #define TOWER 1
-#define NUM_PARTICLES 100 // FIXME: adjust as needed
+#define NUM_PARTICLES 100
 #define SD_THRESHOLD 3 
-#define ADVANCE_TICKS 5 // FIXME: choose proper ticks
-#define ADVANCE_DEGREES 3 // FIXME: when I move the robot x ticks forward, how many degrees is that on the circle?
-#define TOWER_TICK_WIDTH 10.56 // TODO: Check this
+#define ADVANCE_TICKS 5 
+#define ADVANCE_DEGREES 3 
+#define TOWER_TICK_WIDTH 10.56 
 
 struct map_info
 {
@@ -47,13 +52,12 @@ void categorize_particle(struct map_info* map, struct particle* particle);
 void compute_weight(float sensor_reading, struct sensor_info* sensor, struct particle* particle);
 void resample_particles(struct particle* particles, struct particle* new_particles);
 void normalize_weights(float weight_sum, struct particle* particles);
-void print_particles(struct particle* particles); // TODO: delete
 
 
 int main(void)
 {
     int i, degree_ct = 0;
-    char c; //TODO: delete for robot version
+    char c; 
     float weight, weight_sum, robot_position, sensor_reading, final_location_sum, final_location;
     struct sensor_info tower_sensor;
     struct sensor_info free_space_sensor;
@@ -63,7 +67,6 @@ int main(void)
 
     get_user_inputs(&map, &robot_position);
 
-    // TODO: Replace with actual readings
     tower_sensor.a = 0;
     tower_sensor.b = 8;
     tower_sensor.c = 10;
@@ -80,7 +83,6 @@ int main(void)
 
     while (calculate_particle_sd(particles) > SD_THRESHOLD || degree_ct < 360) 
     {
-        // TODO: delete this scan for robot program
         printf("Click enter to continue (Hold enter to complete program).");
         scanf("%c", &c);
 
@@ -89,7 +91,7 @@ int main(void)
         if (robot_position >= 360)
             robot_position = robot_position - 360;
 
-        printf("\n\nMoving robot %d degrees forward, and is now at position %.1f\n", ADVANCE_DEGREES, robot_position); // TODO: replace with moving the actual robot ADVANCE_TICKS forward
+        printf("\n\nMoving robot %d degrees forward, and is now at position %.1f\n", ADVANCE_DEGREES, robot_position); 
 
         sensor_reading = generate_sensor_reading(&tower_sensor, &free_space_sensor, &map, robot_position);
         printf("Generated sensor reading: %.1f\n", sensor_reading);
@@ -359,17 +361,4 @@ void resample_particles(struct particle* particles, struct particle* new_particl
         new_particles[index_to_replace].location = rand() % 360;
         new_particles[index_to_replace].src_particle = -1;
     }
-}
-
-// TODO: delete
-void print_particles(struct particle* particles)
-{
-    int i;
-    printf("\nParticle #     Location       Weight         Summed Weight      Category     Src Part\n");
-
-    for (i = 0; i < NUM_PARTICLES; i++)
-    {
-        printf("%10d%13.3f%13.3f%22.3f%14d%12d\n", i, particles[i].location, particles[i].weight, particles[i].summed_weight, particles[i].category, particles[i].src_particle);
-    }
-    
 }
